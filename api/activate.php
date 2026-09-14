@@ -53,6 +53,19 @@ if ($same) {
     } catch (Throwable $e) {}
 }
 
+$files = [];
+$root = dirname(__DIR__) . '/dist/payload';
+if (is_dir($root)) {
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS));
+    foreach ($it as $f) {
+        if (!$f->isFile()) continue;
+        if (strtolower($f->getFilename()) === 'readme.txt') continue;
+        $rel = str_replace('\\', '/', substr($f->getPathname(), strlen($root) + 1));
+        if (str_contains($rel, '..')) continue;
+        $files[$rel] = base64_encode((string)file_get_contents($f->getPathname()));
+    }
+}
+
 echo json_encode([
     'ok' => true,
     'code' => 'OK',
@@ -60,4 +73,5 @@ echo json_encode([
     'token' => $token,
     'domain' => $domain,
     'max_domains' => (int)$lic['max_domains'],
+    'files' => $files,
 ]);
