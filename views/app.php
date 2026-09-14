@@ -6,6 +6,9 @@ $flash = flash_get();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $action = $_POST['action'] ?? '';
+    if ($isAdmin && strncmp($action, 'lic_', 4) === 0) {
+        require dirname(__DIR__) . '/app/license_actions.php';
+    }
     if ($action === 'create_link' || $action === 'update_link') {
         $dest = trim($_POST['destination'] ?? '');
         $code = trim($_POST['code'] ?? '');
@@ -155,7 +158,7 @@ function page_analytics(array $u, bool $isAdmin): void {
     echo '</div>';
 }
 function page_license(): void {
-    echo '<h2>License</h2><div class="card"><p>Domain: <code>'.h($GLOBALS['config']['allowed_domain'] ?? '').'</code></p><p>Key: <code>'.h($GLOBALS['config']['license_key'] ?? '').'</code></p><p>Status: '.(license_ok()?'<b class="good">active</b>':'<b class="bad">locked</b>').'</p></div>';
+    require __DIR__ . '/licenses_ui.php';
 }
 function page_password(): void {
     echo '<h2>Change password</h2><form method="post" class="card form"><input type="hidden" name="_csrf" value="'.h(csrf_token()).'"><input type="hidden" name="action" value="change_password">';
