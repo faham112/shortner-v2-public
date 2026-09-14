@@ -64,6 +64,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         set_setting('hop_enabled', isset($_POST['hop_enabled']) ? '1' : '0');
         set_setting('hop_after_minutes', (string)max(0, (int)$_POST['hop_after_minutes']));
         set_setting('hop_seconds', (string)max(1, (int)$_POST['hop_seconds']));
+        set_setting('preview_default', isset($_POST['preview_default']) ? '1' : '0');
+        $raw = trim($_POST['install_domains'] ?? '');
+        $parts = preg_split('/[\s,]+/', $raw);
+        $clean = [];
+        foreach ($parts as $p) {
+            $p = function_exists('normalize_domain') ? normalize_domain($p) : strtolower(trim($p));
+            if ($p !== '') $clean[] = $p;
+        }
+        set_setting('install_domains', json_encode(array_values(array_unique($clean))));
         flash_set('ok', 'Settings saved');
         redirect(base_url('admin/settings'));
     }
@@ -85,6 +94,7 @@ function page_links(array $u, bool $isAdmin): void {
         $st = db()->prepare('SELECT * FROM links WHERE id=?'); $st->execute([(int)$_GET['edit']]); $edit = $st->fetch();
         if ($edit && !$isAdmin && (int)$edit['user_id'] !== (int)$u['id']) $edit = null;
     }
+    $previewDefault = setting('preview_default', '1') === '1';
     echo '<h2>'.h(t('links')).'</h2><form method="post" class="card form">';
     echo '<input type="hidden" name="_csrf" value="'.h(csrf_token()).'">';
     echo '<input type="hidden" name="action" value="'.($edit?'update_link':'create_link').'">';
@@ -93,7 +103,7 @@ function page_links(array $u, bool $isAdmin): void {
     echo '<label>'.h(t('custom_code')).'</label><input name="code" value="'.h($edit['code']??'').'" placeholder="auto">';
     echo '<label>Title</label><input name="title" value="'.h($edit['title']??'').'">';
     echo '<label>'.h(t('waste_url')).'</label><input name="waste_url" value="'.h($edit['waste_url']??'').'">';
-    $pc = !empty($edit['preview_on']) || !$edit ? 'checked' : '';
+    $pc = $edit ? (!empty($edit['preview_on']) ? 'checked' : '') : ($previewDefault ? 'checked' : '');
     $ac = !isset($edit['is_active']) || $edit['is_active'] ? 'checked' : '';
     echo '<label class="row"><input type="checkbox" name="preview_on" '.$pc.'> '.h(t('preview')).'</label>';
     echo '<label class="row"><input type="checkbox" name="is_active" '.$ac.'> '.h(t('active')).'</label>';
