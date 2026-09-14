@@ -11,8 +11,11 @@ else {
 }
 
 if ($route === 'install') { require __DIR__ . '/install.php'; exit; }
+if ($route === 'activate') { require __DIR__ . '/activate.php'; exit; }
+if ($route === 'api' && $param === 'activate.php') { require __DIR__ . '/api/activate.php'; exit; }
+if ($route === 'api' && $param === 'status.php') { require __DIR__ . '/api/status.php'; exit; }
 
-$reserved = ['login','logout','admin','user','assets','install','password','theme','lang'];
+$reserved = ['login','logout','admin','user','assets','install','password','theme','lang','activate','api'];
 
 if ($route === 'theme') {
     $_SESSION['theme'] = (($_GET['v'] ?? '') === 'light') ? 'light' : 'dark';

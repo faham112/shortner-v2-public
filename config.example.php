@@ -5,6 +5,7 @@ return [
     'allowed_domain' => 'your-domain.com',
     'allowed_domains' => ['your-domain.com'],
     'license_key' => 'CHANGE_ME',
+    'license_server' => '',
     'db' => [
         'host' => 'localhost',
         'name' => 'shortner',

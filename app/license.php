@@ -26,8 +26,7 @@ function allowed_domains_list(): array {
             if (is_array($arr)) foreach ($arr as $d) $out[] = normalize_domain((string)$d);
         }
     } catch (Throwable $e) {}
-    $out = array_values(array_unique(array_filter($out)));
-    return $out;
+    return array_values(array_unique(array_filter($out)));
 }
 
 function host_allowed(string $host, array $domains): bool {
@@ -39,23 +38,63 @@ function host_allowed(string $host, array $domains): bool {
     return false;
 }
 
+function remote_license_ok(): ?bool {
+    $cfg = $GLOBALS['config'] ?? [];
+    $hq = rtrim((string)($cfg['license_server'] ?? ''), '/');
+    if ($hq === '') return null;
+    $key = trim((string)($cfg['license_key'] ?? ''));
+    $token = '';
+    $domain = current_host();
+    try {
+        $token = (string)setting('license_token', '');
+        $saved = (string)setting('license_domain', '');
+        if ($saved) $domain = $saved;
+    } catch (Throwable $e) {}
+    if ($key === '' || $token === '') return false;
+    $url = $hq . '/api/status.php';
+    $ctx = stream_context_create(['http' => [
+        'method' => 'POST',
+        'header' => 'Content-Type: application/x-www-form-urlencoded',
+        'content' => http_build_query(['key' => $key, 'domain' => $domain, 'token' => $token]),
+        'timeout' => 8,
+    ]]);
+    $raw = @file_get_contents($url, false, $ctx);
+    $j = json_decode((string)$raw, true);
+    if (!is_array($j)) return true;
+    return !empty($j['ok']);
+}
+
 function license_ok(): bool {
     $cfg = $GLOBALS['config'] ?? [];
     $key = trim((string)($cfg['license_key'] ?? ''));
-    if ($key === '' || $key === 'CHANGE_ME') return false;
+    if ($key === '' || $key === 'CHANGE_ME') {
+        $remote = remote_license_ok();
+        return $remote === true;
+    }
+    $remote = remote_license_ok();
+    if ($remote === false) return false;
     $domains = allowed_domains_list();
-    if (!$domains) return false;
+    if (!$domains) return $remote === true;
     return host_allowed(current_host(), $domains);
 }
 
 function license_guard(): void {
+    $cfg = $GLOBALS['config'] ?? [];
+    $hq = trim((string)($cfg['license_server'] ?? ''));
+    $activated = false;
+    try { $activated = setting('license_activated', '0') === '1'; } catch (Throwable $e) {}
+    if ($hq !== '' && !$activated) {
+        header('Location: /activate');
+        exit;
+    }
     if (license_ok()) return;
     http_response_code(403);
     echo '<!doctype html><meta charset="utf-8"><title>License</title>';
     echo '<body style="font-family:sans-serif;padding:40px;background:#0b1220;color:#e5e7eb">';
-    echo '<h1>Shortner license lock</h1>';
-    echo '<p>License key missing or this domain is not in the allowed list.</p>';
-    echo '<p>Current host: <code>' . h(current_host()) . '</code></p></body>';
+    echo '<h1>License blocked</h1>';
+    echo '<p>This license key is not valid on this site. Contact admin.</p>';
+    echo '<p>Host: <code>' . h(current_host()) . '</code></p>';
+    echo '<p><a href="/activate" style="color:#a5b4fc">Try activate again</a></p></body>';
     exit;
 }
 

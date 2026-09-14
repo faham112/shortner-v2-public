@@ -4,9 +4,11 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $configFile = $root . '/config.php';
 
-$installing = (php_sapi_name() !== 'cli') && isset($_GET['r']) && $_GET['r'] === 'install';
 $pathInfo = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/', '/');
-if ($pathInfo === 'install') $installing = true;
+$first = explode('/', $pathInfo)[0] ?? '';
+$installing = ($first === 'install');
+$activating = ($first === 'activate');
+$apiCall = ($first === 'api');
 
 if (!is_file($configFile) && !$installing) {
     header('Location: /install');
@@ -28,8 +30,12 @@ require $root . '/app/license.php';
 require $root . '/app/ua.php';
 require $root . '/app/i18n.php';
 
-if (is_file($configFile) && !$installing) {
+if (is_file($configFile) && !$installing && !$activating && !$apiCall) {
     require $root . '/app/db.php';
     require $root . '/app/auth.php';
     license_guard();
+}
+
+if ($apiCall && is_file($configFile)) {
+    require $root . '/app/db.php';
 }
