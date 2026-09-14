@@ -164,7 +164,8 @@ function page_password(): void {
 ?>
 <!doctype html>
 <html lang="<?= h(lang()) ?>" data-theme="<?= h($theme) ?>">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shortner</title>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shortner</title>
 <link rel="stylesheet" href="<?= h(base_url('assets/app.css')) ?>"></head>
 <body class="app">
 <aside>
@@ -199,4 +200,5 @@ function page_password(): void {
     else page_dashboard($u, $isAdmin);
   ?>
 </main>
+<?php require __DIR__ . '/bottom_nav.php'; ?>
 </body></html>
