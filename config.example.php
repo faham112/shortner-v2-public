@@ -3,6 +3,7 @@ return [
     'app_name' => 'Shortner',
     'base_url' => 'https://your-domain.com',
     'allowed_domain' => 'your-domain.com',
+    'allowed_domains' => ['your-domain.com'],
     'license_key' => 'CHANGE_ME',
     'db' => [
         'host' => 'localhost',
