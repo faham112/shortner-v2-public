@@ -1,6 +1,8 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
-require dirname(__DIR__) . '/app/bootstrap.php';
+if (!function_exists('db')) {
+    require dirname(__DIR__) . '/app/bootstrap.php';
+}
 
 $key = trim((string)($_POST['key'] ?? $_GET['key'] ?? ''));
 $domain = normalize_domain((string)($_POST['domain'] ?? $_GET['domain'] ?? ''));
