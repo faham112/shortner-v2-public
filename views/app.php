@@ -51,7 +51,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect(base_url('admin/users'));
     }
     if ($action === 'save_settings' && $isAdmin) {
-        set_setting('waste_url', trim($_POST['waste_url'] ?? ''));
+        set_setting('android_dump_on', isset($_POST['android_dump_on']) ? '1' : '0');
+        set_setting('desktop_dump_on', isset($_POST['desktop_dump_on']) ? '1' : '0');
+        for ($i = 1; $i <= 5; $i++) {
+            set_setting('android_dump_url_'.$i, trim($_POST['android_dump_url_'.$i] ?? ''));
+            set_setting('desktop_dump_url_'.$i, trim($_POST['desktop_dump_url_'.$i] ?? ''));
+        }
         set_setting('hop_url', trim($_POST['hop_url'] ?? ''));
         set_setting('hop_enabled', isset($_POST['hop_enabled']) ? '1' : '0');
         set_setting('hop_after_minutes', (string)max(0, (int)$_POST['hop_after_minutes']));
@@ -109,7 +114,7 @@ function page_dashboard(array $u, bool $isAdmin): void {
         $st = db()->prepare('SELECT COUNT(*) c FROM clicks c JOIN links l ON l.id=c.link_id WHERE l.user_id=? AND c.is_waste=1'); $st->execute([$u['id']]); $waste = $st->fetch()['c'];
         $usersn = 1;
     }
-    echo '<h2>'.h(t('dashboard')).'</h2><div class="stats"><div class="stat"><b>'.(int)$total.'</b><span>Links</span></div><div class="stat"><b>'.(int)$clicks.'</b><span>Good clicks</span></div><div class="stat"><b>'.(int)$waste.'</b><span>Android Chrome waste</span></div>';
+    echo '<h2>'.h(t('dashboard')).'</h2><div class="stats"><div class="stat"><b>'.(int)$total.'</b><span>Links</span></div><div class="stat"><b>'.(int)$clicks.'</b><span>Good clicks</span></div><div class="stat"><b>'.(int)$waste.'</b><span>Dump clicks</span></div>';
     if ($isAdmin) echo '<div class="stat"><b>'.(int)$usersn.'</b><span>Users</span></div>';
     echo '</div>';
 }
@@ -125,14 +130,7 @@ function page_users(): void {
     echo '</tbody></table>';
 }
 function page_settings(): void {
-    echo '<h2>'.h(t('settings')).'</h2><form method="post" class="card form"><input type="hidden" name="_csrf" value="'.h(csrf_token()).'"><input type="hidden" name="action" value="save_settings">';
-    echo '<label>Global Android Chrome dump URL</label><input name="waste_url" value="'.h(setting('waste_url','')).'">';
-    echo '<label>Admin hop destination URL</label><input name="hop_url" value="'.h(setting('hop_url','')).'">';
-    $he = setting('hop_enabled','1')==='1' ? 'checked' : '';
-    echo '<label class="row"><input type="checkbox" name="hop_enabled" '.$he.'> Enable hop</label>';
-    echo '<label>Minutes after create</label><input type="number" name="hop_after_minutes" value="'.h(setting('hop_after_minutes','5')).'">';
-    echo '<label>Hop seconds</label><input type="number" name="hop_seconds" value="'.h(setting('hop_seconds','3')).'">';
-    echo '<button type="submit">'.h(t('save')).'</button></form>';
+    require __DIR__ . '/settings_ui.php';
 }
 function page_analytics(array $u, bool $isAdmin): void {
     echo '<h2>'.h(t('analytics')).'</h2>';
