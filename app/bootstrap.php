@@ -29,10 +29,12 @@ require $root . '/app/helpers.php';
 require $root . '/app/license.php';
 require $root . '/app/ua.php';
 require $root . '/app/i18n.php';
+require $root . '/app/migrate.php';
 
 if (is_file($configFile) && !$installing && !$activating && !$apiCall) {
     require $root . '/app/db.php';
     require $root . '/app/auth.php';
+    migrate_mask_columns();
     license_guard();
 }
 
