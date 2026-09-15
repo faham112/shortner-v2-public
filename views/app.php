@@ -179,7 +179,9 @@ function page_password(): void {
 <html lang="<?= h(lang()) ?>" data-theme="<?= h($theme) ?>">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Shortner</title>
-<link rel="stylesheet" href="<?= h(base_url('assets/app.css')) ?>"></head>
+<link rel="stylesheet" href="<?= h(base_url('assets/app.css')) ?>">
+<?php require __DIR__ . '/theme_inline.php'; ?>
+</head>
 <body class="app">
 <aside>
   <div class="brand">Shortner</div>
