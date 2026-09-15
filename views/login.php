@@ -22,9 +22,10 @@ $theme = $_SESSION['theme'] ?? 'dark';
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= h(t('login')) ?> — Shortner</title>
 <link rel="stylesheet" href="<?= h(base_url('assets/app.css')) ?>">
+<?php require __DIR__ . '/theme_inline.php'; ?>
 </head>
 <body class="auth">
-<form class="card" method="post">
+<form class="card form" method="post">
   <h1>Shortner</h1>
   <p><?= h(t('login')) ?></p>
   <?php if ($error): ?><div class="alert bad"><?= h($error) ?></div><?php endif; ?>
