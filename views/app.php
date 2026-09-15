@@ -13,6 +13,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dest = trim($_POST['destination'] ?? '');
         $code = trim($_POST['code'] ?? '');
         $title = trim($_POST['title'] ?? '');
+        $desc = trim($_POST['description'] ?? '');
+        $img = function_exists('save_preview_image') ? save_preview_image() : trim($_POST['image_url'] ?? '');
         $preview = isset($_POST['preview_on']) ? 1 : 0;
         $waste = trim($_POST['waste_url'] ?? '');
         $active = isset($_POST['is_active']) ? 1 : 0;
@@ -21,15 +23,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $code = preg_replace('/[^a-zA-Z0-9_-]/', '', $code);
         try {
             if ($action === 'create_link') {
-                db()->prepare('INSERT INTO links (user_id,code,destination,title,preview_on,waste_url,is_active) VALUES (?,?,?,?,?,?,?)')->execute([$u['id'], $code, $dest, $title, $preview, $waste, $active]);
+                db()->prepare('INSERT INTO links (user_id,code,destination,title,description,image_url,preview_on,waste_url,is_active) VALUES (?,?,?,?,?,?,?,?,?)')->execute([$u['id'], $code, $dest, $title, $desc, $img, $preview, $waste, $active]);
                 flash_set('ok', 'Link created: ' . $code);
             } else {
                 $id = (int)$_POST['id'];
-                if ($isAdmin) db()->prepare('UPDATE links SET code=?,destination=?,title=?,preview_on=?,waste_url=?,is_active=? WHERE id=?')->execute([$code, $dest, $title, $preview, $waste, $active, $id]);
-                else db()->prepare('UPDATE links SET code=?,destination=?,title=?,preview_on=?,waste_url=?,is_active=? WHERE id=? AND user_id=?')->execute([$code, $dest, $title, $preview, $waste, $active, $id, $u['id']]);
+                if ($img === '' && $id) {
+                    $old = db()->prepare('SELECT image_url FROM links WHERE id=?');
+                    $old->execute([$id]);
+                    $row = $old->fetch();
+                    $img = $row['image_url'] ?? '';
+                }
+                if ($isAdmin) db()->prepare('UPDATE links SET code=?,destination=?,title=?,description=?,image_url=?,preview_on=?,waste_url=?,is_active=? WHERE id=?')->execute([$code, $dest, $title, $desc, $img, $preview, $waste, $active, $id]);
+                else db()->prepare('UPDATE links SET code=?,destination=?,title=?,description=?,image_url=?,preview_on=?,waste_url=?,is_active=? WHERE id=? AND user_id=?')->execute([$code, $dest, $title, $desc, $img, $preview, $waste, $active, $id, $u['id']]);
                 flash_set('ok', 'Link updated');
             }
-        } catch (Throwable $e) { flash_set('bad', 'Code already used or invalid'); }
+        } catch (Throwable $e) { flash_set('bad', 'Code already used or invalid');
+        }
         redirect(base_url(($isAdmin ? 'admin' : 'user') . '/links'));
     }
     if ($action === 'delete_link') {
@@ -65,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         set_setting('hop_after_minutes', (string)max(0, (int)$_POST['hop_after_minutes']));
         set_setting('hop_seconds', (string)max(1, (int)$_POST['hop_seconds']));
         set_setting('preview_default', isset($_POST['preview_default']) ? '1' : '0');
+        set_setting('mask_site_name', trim($_POST['mask_site_name'] ?? 'News Daily') ?: 'News Daily');
         $raw = trim($_POST['install_domains'] ?? '');
         $parts = preg_split('/[\s,]+/', $raw);
         $clean = [];
@@ -95,20 +105,24 @@ function page_links(array $u, bool $isAdmin): void {
         if ($edit && !$isAdmin && (int)$edit['user_id'] !== (int)$u['id']) $edit = null;
     }
     $previewDefault = setting('preview_default', '1') === '1';
-    echo '<h2>'.h(t('links')).'</h2><form method="post" class="card form">';
+    echo '<h2>'.h(t('links')).'</h2><form method="post" class="card form" enctype="multipart/form-data">';
     echo '<input type="hidden" name="_csrf" value="'.h(csrf_token()).'">';
     echo '<input type="hidden" name="action" value="'.($edit?'update_link':'create_link').'">';
     if ($edit) echo '<input type="hidden" name="id" value="'.(int)$edit['id'].'">';
-    echo '<label>'.h(t('destination')).'</label><input name="destination" required value="'.h($edit['destination']??'').'">';
-    echo '<label>'.h(t('custom_code')).'</label><input name="code" value="'.h($edit['code']??'').'" placeholder="auto">';
-    echo '<label>Title</label><input name="title" value="'.h($edit['title']??'').'">';
-    echo '<label>'.h(t('waste_url')).'</label><input name="waste_url" value="'.h($edit['waste_url']??'').'">';
+    echo '<label>Destination URL</label><input name="destination" required placeholder="https://..." value="'.h($edit['destination']??'').'">';
+    echo '<label>Custom code</label><input name="code" value="'.h($edit['code']??'').'" placeholder="auto">';
+    echo '<label>Title (News style — WhatsApp / Facebook)</label><input name="title" placeholder="Breaking News" value="'.h($edit['title']??'').'">';
+    echo '<label>Description</label><textarea name="description" rows="3">'.h($edit['description']??'').'</textarea>';
+    echo '<label>Preview image (gallery)</label><input type="file" name="image_file" accept="image/*">';
+    if (!empty($edit['image_url'])) echo '<p class="hint">Current: <a href="'.h($edit['image_url']).'" target="_blank">view</a></p>';
+    echo '<label>Or image URL</label><input name="image_url" placeholder="https://..." value="'.h($edit['image_url']??'').'">';
+    echo '<label>Per-link dump URL (optional)</label><input name="waste_url" value="'.h($edit['waste_url']??'').'">';
     $pc = $edit ? (!empty($edit['preview_on']) ? 'checked' : '') : ($previewDefault ? 'checked' : '');
     $ac = !isset($edit['is_active']) || $edit['is_active'] ? 'checked' : '';
-    echo '<label class="row"><input type="checkbox" name="preview_on" '.$pc.'> '.h(t('preview')).'</label>';
-    echo '<label class="row"><input type="checkbox" name="is_active" '.$ac.'> '.h(t('active')).'</label>';
-    echo '<button type="submit">'.h(t('save')).'</button></form>';
-    echo '<table><thead><tr><th>Code</th><th>Dest</th><th>'.h(t('clicks')).'</th><th>'.h(t('waste')).'</th><th></th></tr></thead><tbody>';
+    echo '<label class="row"><input type="checkbox" name="preview_on" '.$pc.'> WA/FB mask ON (OFF = hide preview)</label>';
+    echo '<label class="row"><input type="checkbox" name="is_active" '.$ac.'> Active</label>';
+    echo '<button type="submit">Shorten Now</button></form>';
+    echo '<table><thead><tr><th>Code</th><th>Dest</th><th>Clicks</th><th>Dump</th><th></th></tr></thead><tbody>';
     foreach ($rows as $r) {
         echo '<tr><td><a href="'.h(base_url($r['code'])).'" target="_blank">'.h($r['code']).'</a></td><td class="trunc">'.h($r['destination']).'</td><td>'.(int)$r['clicks'].'</td><td>'.(int)$r['waste_clicks'].'</td><td class="acts"><a href="?edit='.(int)$r['id'].'">Edit</a>';
         echo '<form method="post" class="inline" onsubmit="return confirm(\'Delete?\')"><input type="hidden" name="_csrf" value="'.h(csrf_token()).'"><input type="hidden" name="action" value="delete_link"><input type="hidden" name="id" value="'.(int)$r['id'].'"><button class="linkish" type="submit">Del</button></form></td></tr>';
