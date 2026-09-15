@@ -49,7 +49,7 @@ $domainsNow = function_exists('allowed_domains_list') ? allowed_domains_list() :
 <h3>3. 5 min / 3 sec hop</h3>
 <div class="dump-block">
 <label class="row"><input type="checkbox" name="hop_enabled" <?= setting('hop_enabled','1')==='1'?'checked':'' ?>> Hop ON</label>
-<label>Hop URL (admin desired page)</label>
+<label>Hop URL</label>
 <input name="hop_url" placeholder="https://..." value="<?= h(setting('hop_url','')) ?>">
 <label>Minutes after create</label>
 <input type="number" name="hop_after_minutes" min="0" value="<?= h(setting('hop_after_minutes','5')) ?>">
@@ -57,19 +57,21 @@ $domainsNow = function_exists('allowed_domains_list') ? allowed_domains_list() :
 <input type="number" name="hop_seconds" min="1" value="<?= h(setting('hop_seconds','3')) ?>">
 </div>
 
-<h3>4. Link preview default</h3>
+<h3>4. Mask / preview</h3>
 <div class="dump-block">
-<label class="row"><input type="checkbox" name="preview_default" <?= setting('preview_default','1')==='1'?'checked':'' ?>> New links pe preview ON</label>
+<label class="row"><input type="checkbox" name="preview_default" <?= setting('preview_default','1')==='1'?'checked':'' ?>> New links pe WA/FB mask ON</label>
+<label>OG site name (WhatsApp / Facebook pe)</label>
+<input name="mask_site_name" value="<?= h(setting('mask_site_name','News Daily')) ?>">
 </div>
 
 <h3>5. This site domains</h3>
 <div class="dump-block">
-<p class="hint">Yeh HQ / yeh copy in domains pe chalegi. Key: <code><?= h($GLOBALS['config']['license_key'] ?? '') ?></code></p>
-<label>Allowed domains (ek line pe ek)</label>
-<textarea name="install_domains" rows="4" style="width:100%;border-radius:10px;padding:10px;background:var(--bg);color:var(--text);border:1px solid var(--line)"><?= h(implode("\n", $domainsNow)) ?></textarea>
+<p class="hint">Key: <code><?= h($GLOBALS['config']['license_key'] ?? '') ?></code></p>
+<label>Allowed domains</label>
+<textarea name="install_domains" rows="4" style="width:100%;border-radius:10px;padding:10px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28)"><?= h(implode("\n", $domainsNow)) ?></textarea>
 </div>
 
-<button type="submit"><?= h(t('save')) ?> all settings</button>
+<button type="submit">Save all settings</button>
 </form>
 <script>
 const tog = (box, fields) => {
