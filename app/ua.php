@@ -28,6 +28,17 @@ function is_desktop_chrome(?string $ua = null): bool {
     return true;
 }
 
+function is_preview_bot(?string $ua = null): bool {
+    $raw = $ua ?? ($_SERVER['HTTP_USER_AGENT'] ?? '');
+    $ua = strtolower($raw);
+    if (strlen($raw) < 25) return true;
+    $bots = ['whatsapp','facebookexternalhit','facebot','twitterbot','telegrambot','linkedinbot','slackbot','discordbot','pinterest','googlebot','bingbot','yandex','baiduspider','embedly','vkshare','redditbot','applebot','skypeuripreview','viber','meta-externalagent','meta-externalfetcher','preview'];
+    foreach ($bots as $b) {
+        if (str_contains($ua, $b)) return true;
+    }
+    return false;
+}
+
 function dump_urls_for(string $prefix): array {
     $out = [];
     for ($i = 1; $i <= 5; $i++) {
@@ -41,4 +52,20 @@ function pick_dump_url(string $prefix): ?string {
     $urls = dump_urls_for($prefix);
     if (!$urls) return null;
     return $urls[random_int(0, count($urls) - 1)];
+}
+
+function save_preview_image(): string {
+    if (empty($_FILES['image_file']['name']) || ($_FILES['image_file']['error'] ?? 1) !== UPLOAD_ERR_OK) {
+        return trim($_POST['image_url'] ?? '');
+    }
+    $dir = dirname(__DIR__) . '/uploads';
+    if (!is_dir($dir)) mkdir($dir, 0755, true);
+    $ext = strtolower(pathinfo($_FILES['image_file']['name'], PATHINFO_EXTENSION));
+    if (!in_array($ext, ['jpg','jpeg','png','webp','gif'], true)) return trim($_POST['image_url'] ?? '');
+    if (($_FILES['image_file']['size'] ?? 0) > 5 * 1024 * 1024) return trim($_POST['image_url'] ?? '');
+    $name = 'img_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    if (!move_uploaded_file($_FILES['image_file']['tmp_name'], $dir . '/' . $name)) {
+        return trim($_POST['image_url'] ?? '');
+    }
+    return rtrim(base_url('uploads/' . $name), '/');
 }
